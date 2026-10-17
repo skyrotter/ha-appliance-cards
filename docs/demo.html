@@ -451,7 +451,8 @@ const SCEN = [
     } },
   { kind: 'water-heat-pump', title: 'PAC eau/eau (géothermie)', lang: true,
     cfg: { entity_status: 'sensor.whp_status', entity_power: 'sensor.whp_power', entity_heat_power: 'sensor.whp_heat', entity_flow_temp: 'sensor.whp_flow', entity_return_temp: 'sensor.whp_return',
-      entity_flow_rate: 'sensor.whp_rate', entity_source_in_temp: 'sensor.whp_src_in', entity_source_out_temp: 'sensor.whp_src_out', entity_energy: 'sensor.whp_energy', entity_heat_energy: 'sensor.whp_heat_energy' },
+      entity_flow_rate: 'sensor.whp_rate', entity_source_in_temp: 'sensor.whp_src_in', entity_source_out_temp: 'sensor.whp_src_out', entity_energy: 'sensor.whp_energy', entity_heat_energy: 'sensor.whp_heat_energy',
+      threshold: 25, source_threshold: 150, compressor_threshold: 800 },
     build(ctl) {
       select(ctl, 'État', 'sensor.whp_status', [['heating', 'Chauffage / Heating'], ['dhw', 'Eau chaude / Hot water'], ['cooling', 'Rafraîchissement / Cooling'], ['standby', 'Veille / Standby'], ['off', 'Arrêt / Off'], ['fault', 'Défaut / Fault']], 'heating');
       range(ctl, 'Puissance élec.', 'sensor.whp_power', 0, 8000, 50, 1500, 'W', W);
@@ -461,8 +462,15 @@ const SCEN = [
       range(ctl, 'Débit', 'sensor.whp_rate', 0, 4, 0.05, 1.2, 'm³/h', { unit_of_measurement: 'm³/h' });
       range(ctl, 'Captage entrée', 'sensor.whp_src_in', -5, 15, 0.5, 8, '°C', T);
       range(ctl, 'Captage sortie', 'sensor.whp_src_out', -5, 15, 0.5, 5, '°C', T);
+      // option de la carte (pas un état) : on reconfigure la carte
+      select(ctl, 'Ballon tampon', 'input_select.demo_whp_buffer', [['no', 'Non / no'], ['yes', 'Oui / yes']], this.cfg.buffer_tank ? 'yes' : 'no', (v) => {
+        this.cfg.buffer_tank = v === 'yes';
+        if (this.cfg.buffer_tank) this.cfg.entity_buffer_temp = 'sensor.whp_buffer'; else delete this.cfg.entity_buffer_temp;
+        const el = cards.find((e) => e._scen === this); if (el) { el.setConfig(scenCfg(this)); refresh(); }
+      });
+      range(ctl, 'Ballon tampon', 'sensor.whp_buffer', 15, 60, 0.5, 38, '°C', T);
       set('sensor.whp_energy', 12.4, KWH); set('sensor.whp_heat_energy', 43.1, KWH);
-      ctl.append(document.createElement('span'), Object.assign(document.createElement('span'), { textContent: 'COP calculé = thermique / électrique · débit à 0 = l’eau s’arrête', style: 'color:var(--secondary-text-color);font-size:12px' }), document.createElement('span'));
+      ctl.append(document.createElement('span'), Object.assign(document.createElement('span'), { textContent: 'COP calculé = thermique / électrique · débit à 0 = l’eau s’arrête · élec. > 150 W : pompes de captage, > 800 W : compresseur · ballon tampon : le circulateur alimente les émetteurs même compresseur arrêté', style: 'color:var(--secondary-text-color);font-size:12px' }), document.createElement('span'));
     } },
 ];
 const ROBOT_SEL = {};

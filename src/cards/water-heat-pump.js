@@ -19,7 +19,7 @@ ha-card{display:block;padding:10px 12px 12px;overflow:hidden;--wp-heat:var(--app
 .heating .badge{background:color-mix(in srgb,var(--wp-heat) 22%,transparent);color:var(--wp-heat)}
 .dhw .badge,.cooling .badge{background:color-mix(in srgb,var(--wp-cold) 22%,transparent);color:var(--wp-cold)}
 .alarm .badge{background:color-mix(in srgb,var(--wp-alert) 22%,transparent);color:var(--wp-alert)}
-svg{display:block;width:100%;max-width:200px;height:var(--appliance-illustration-height,auto);margin:2px auto 0;overflow:visible}
+svg{display:block;width:100%;height:var(--appliance-illustration-height,auto);margin:2px auto 0;overflow:visible}
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(76px,1fr));gap:6px;margin-top:6px}
 .tile{box-sizing:border-box;background:var(--secondary-background-color);border-radius:10px;padding:5px 7px;min-width:0;overflow:hidden;text-align:center;cursor:pointer}
 .tile .l{display:flex;align-items:center;justify-content:center;gap:3px;font-size:10px;line-height:14px;color:var(--secondary-text-color);min-width:0}
@@ -34,7 +34,7 @@ svg{display:block;width:100%;max-width:200px;height:var(--appliance-illustration
 .run .comp{animation:vib .11s linear infinite alternate}
 @keyframes vib{0%{transform:translate(-.5px,0)}100%{transform:translate(.5px,-.4px)}}
 .dash{stroke-dasharray:3 8;opacity:0}
-.run .dash.src,.run .dash.ref,.circ .dash.ch{opacity:.9;animation:flow 1s linear infinite}
+.src .dash.src,.run .dash.ref,.circ .dash.ch,.chg .dash.chg{opacity:.9;animation:flow 1s linear infinite}
 .run .dash.ref{opacity:.55;animation-duration:1.6s}
 @keyframes flow{to{stroke-dashoffset:-11}}
 .rad{fill:#e9edf1;transition:fill .8s}
@@ -46,25 +46,29 @@ svg{display:block;width:100%;max-width:200px;height:var(--appliance-illustration
 .dsp{fill:#7fe3ff;font:700 13px/1 var(--paper-font-body1_-_font-family,Roboto,sans-serif);text-anchor:middle}
 .alarm .dsp{fill:#ffb74d}.off .dsp{fill:#3b4a5c}
 .off .body-shade{opacity:.55}
+.buf{display:none}.buffer .buf{display:inline}.buffer .direct{display:none}
 .noanim *{animation:none!important}
 `;
 
   const SVG = `
-<svg viewBox="0 0 240 204" role="img" aria-label="water heat pump">
+<svg viewBox="0 0 290 204" role="img" aria-label="water heat pump">
  <defs>
   <linearGradient id="wp-body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#d9dfe6"/></linearGradient>
   <linearGradient id="wp-comp" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5b6570"/><stop offset=".45" stop-color="#3a434d"/><stop offset="1" stop-color="#22292f"/></linearGradient>
+  <linearGradient id="wp-tank" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--wp-tankc,#e5533d)"/><stop offset="1" style="stop-color:var(--wp-retc,#3b8fe8)"/></linearGradient>
   <linearGradient id="wp-soil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a1856a"/><stop offset="1" stop-color="#6f5641"/></linearGradient>
  </defs>
  <!-- sol et sonde de captage -->
  <rect x="0" y="158" width="66" height="46" rx="3" fill="url(#wp-soil)" opacity=".85"/>
  <path d="M0 158 H66" stroke="#6aa84f" stroke-width="3"/>
  <!-- radiateur -->
+ <g transform="translate(40 0)">
  <rect x="184" y="14" width="52" height="50" rx="5" fill="#000" opacity=".1" transform="translate(1.5 2)"/>
  <g class="rad" stroke="#aab3bd" stroke-width="1">
   <rect x="184" y="14" width="52" height="8" rx="3"/><rect x="184" y="56" width="52" height="8" rx="3"/>
   <rect x="187" y="18" width="7" height="42" rx="3"/><rect x="198" y="18" width="7" height="42" rx="3"/>
   <rect x="209" y="18" width="7" height="42" rx="3"/><rect x="220" y="18" width="7" height="42" rx="3"/>
+ </g>
  </g>
  <!-- caisson -->
  <rect x="76" y="26" width="96" height="128" rx="9" fill="#000" opacity=".12" transform="translate(2 3)"/>
@@ -80,9 +84,21 @@ svg{display:block;width:100%;max-width:200px;height:var(--appliance-illustration
   <path d="M30 188 Q38 199 46 188" stroke="#3d8fd0"/>
   <path d="M46 188 V104 H92" stroke="#2b6cb0"/>
  </g>
- <g fill="none" stroke-width="6" stroke-linecap="round">
-  <path d="M148 80 H196 V64" style="stroke:var(--wp-flowc,#e5533d)"/>
-  <path d="M224 64 V104 H148" style="stroke:var(--wp-retc,#3b8fe8)"/>
+ <g class="direct" fill="none" stroke-width="6" stroke-linecap="round">
+  <path d="M148 80 H236 V64" style="stroke:var(--wp-flowc,#e5533d)"/>
+  <path d="M264 64 V104 H148" style="stroke:var(--wp-retc,#3b8fe8)"/>
+ </g>
+ <!-- ballon tampon : boucle de charge (PAC ↔ ballon) et boucle de distribution (ballon ↔ émetteurs) -->
+ <g class="buf">
+  <g fill="none" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+   <path d="M148 80 H204 V128 H232" style="stroke:var(--wp-flowc,#e5533d)"/>
+   <path d="M232 186 H190 V104 H148" style="stroke:var(--wp-retc,#3b8fe8)"/>
+   <path d="M251 118 V84 H236 V64" style="stroke:var(--wp-tankc,#e5533d)"/>
+   <path d="M264 64 V96 H280 V180 H270" style="stroke:var(--wp-retc,#3b8fe8)"/>
+  </g>
+  <rect x="234" y="120" width="38" height="78" rx="12" fill="#000" opacity=".12"/>
+  <rect x="232" y="118" width="38" height="78" rx="12" fill="url(#wp-tank)" stroke="#8f99a4" stroke-width="1.2"/>
+  <rect x="237" y="124" width="6" height="66" rx="3" fill="#fff" opacity=".28"/>
  </g>
  <!-- évaporateur (captage) et condenseur (chauffage) : échangeurs à plaques -->
  <g fill="#5fa8e8" stroke="#2f6ea8" stroke-width=".5">
@@ -110,7 +126,9 @@ svg{display:block;width:100%;max-width:200px;height:var(--appliance-illustration
  <!-- circulation de l'eau -->
  <g stroke="#fff" stroke-width="2.4" stroke-linecap="round" fill="none">
   <path class="dash src" d="M30 188 V80 H72"/><path class="dash src" d="M72 104 H46 V188"/>
-  <path class="dash ch" d="M172 80 H196 V64"/><path class="dash ch" d="M224 64 V104 H172"/>
+  <g class="direct"><path class="dash ch" d="M172 80 H236 V64"/><path class="dash ch" d="M264 64 V104 H172"/></g>
+  <g class="buf"><path class="dash chg" d="M168 80 H204 V128 H232"/><path class="dash chg" d="M232 186 H190 V104 H168"/>
+   <path class="dash ch" d="M251 118 V84 H236 V64"/><path class="dash ch" d="M264 64 V96 H280 V180 H270"/></g>
  </g>
 </svg>`;
 
@@ -121,6 +139,7 @@ svg{display:block;width:100%;max-width:200px;height:var(--appliance-illustration
     ['flow', 'mdi:thermometer-chevron-up', 'show_temps', 'entity_flow_temp'],
     ['ret', 'mdi:thermometer-chevron-down', 'show_temps', 'entity_return_temp'],
     ['delta', 'mdi:delta', 'show_temps', 'entity_flow_temp'],
+    ['buffer', 'mdi:storage-tank', 'show_temps', 'entity_buffer_temp'],
     ['src_in', 'mdi:thermometer-water', 'show_source', 'entity_source_in_temp'],
     ['src_out', 'mdi:thermometer-low', 'show_source', 'entity_source_out_temp'],
     ['rate', 'mdi:pump', 'show_flow_rate', 'entity_flow_rate'],
@@ -142,6 +161,7 @@ svg{display:block;width:100%;max-width:200px;height:var(--appliance-illustration
     }
     static getConfigForm() {
       const ent = (name, domain, extra = {}) => ({ name, selector: { entity: { domain, ...extra } } });
+      const RELAY = ['binary_sensor', 'switch', 'input_boolean', 'sensor'];
       return {
         schema: [
           { name: 'name', selector: { text: {} } },
@@ -149,8 +169,16 @@ svg{display:block;width:100%;max-width:200px;height:var(--appliance-illustration
           { type: 'grid', name: '', schema: [ent('entity_power', 'sensor'), ent('entity_heat_power', 'sensor'), ent('entity_cop', 'sensor')] },
           { type: 'grid', name: '', schema: [ent('entity_flow_temp', 'sensor'), ent('entity_return_temp', 'sensor'), ent('entity_flow_rate', 'sensor')] },
           { type: 'grid', name: '', schema: [ent('entity_source_in_temp', 'sensor'), ent('entity_source_out_temp', 'sensor')] },
+          { type: 'grid', name: '', schema: [{ name: 'buffer_tank', selector: { boolean: {} } }, ent('entity_buffer_temp', 'sensor')] },
           { type: 'grid', name: '', schema: [ent('entity_energy', 'sensor'), ent('entity_heat_energy', 'sensor'), ent('entity_scop', 'sensor')] },
-          { name: 'threshold', selector: { number: { min: 0, max: 2000, step: 5, mode: 'box', unit_of_measurement: 'W' } } },
+          { type: 'grid', name: '', schema: [ent('entity_compressor', RELAY), ent('entity_source_pump', RELAY)] },
+          { type: 'grid', name: '', schema: [
+            { name: 'threshold', selector: { number: { min: 0, max: 2000, step: 5, mode: 'box', unit_of_measurement: 'W' } } },
+            { name: 'off_threshold', selector: { number: { min: 0, max: 500, step: 0.1, mode: 'box', unit_of_measurement: 'W' } } },
+            { name: 'source_threshold', selector: { number: { min: 0, max: 5000, step: 5, mode: 'box', unit_of_measurement: 'W' } } },
+            { name: 'compressor_threshold', selector: { number: { min: 0, max: 5000, step: 5, mode: 'box', unit_of_measurement: 'W' } } },
+            { name: 'heating_delay', selector: { number: { min: 0, max: 600, step: 1, mode: 'box', unit_of_measurement: 's' } } },
+          ] },
           { type: 'grid', name: '', schema: SHOW.map((name) => ({ name, selector: { boolean: {} }, default: true })) },
           { name: 'language', selector: { select: { options: Object.keys(T) } } },
         ],
@@ -158,12 +186,26 @@ svg{display:block;width:100%;max-width:200px;height:var(--appliance-illustration
     }
     setConfig(c) {
       if (!c || typeof c !== 'object') throw new Error('Invalid configuration');
-      this._c = { ...Object.fromEntries(SHOW.map((k) => [k, true])), threshold: 100, ...c };
+      this._c = { ...Object.fromEntries(SHOW.map((k) => [k, true])), threshold: 100, off_threshold: 0.5, ...c };
       this._built = false;
       if (this._hass) this._render();
     }
     set hass(h) { this._hass = h; if (this._c) this._render(); }
     getCardSize() { return 5; }
+    disconnectedCallback() { clearTimeout(this._dt); this._dt = null; }
+    // Chauffage seulement si la puissance reste au-dessus du seuil pendant heating_delay secondes
+    // (ex. pompes de puits et du primaire qui tournent ~20 s par jour pendant la veille).
+    _sustained(above) {
+      const d = (+this._c.heating_delay || 0) * 1000;
+      if (!above) { this._since = null; clearTimeout(this._dt); this._dt = null; return false; }
+      if (!d) return true;
+      const now = Date.now();
+      if (this._since == null) this._since = Math.min(now, Date.parse((this._st(this._c.entity_power) || {}).last_changed) || now);
+      const left = this._since + d - now;
+      if (left <= 0) return true;
+      if (!this._dt) this._dt = setTimeout(() => { this._dt = null; if (this._hass) this._render(); }, left + 50);
+      return false;
+    }
     getGridOptions() { return { columns: 12, min_columns: 6, rows: 'auto' }; }
 
     _t(k) { return T[this._lang()][k] ?? T.en[k] ?? k; }
@@ -178,6 +220,12 @@ svg{display:block;width:100%;max-width:200px;height:var(--appliance-illustration
       const v = this._num(id); if (isNaN(v)) return NaN;
       const u = ((this._st(id).attributes || {}).unit_of_measurement || '').toLowerCase();
       return u === 'kw' ? v * 1000 : u === 'mw' ? v * 1e6 : v;
+    }
+    // relais (binary_sensor, switch…) : on / off ; capteur numérique : marche au-dessus de 0
+    _on(id) {
+      const s = this._st(id); if (!s) return false;
+      const v = this._num(id);
+      return isNaN(v) ? /^(on|true|running|marche|heat|cool)/i.test(String(s.state)) : v > 0;
     }
     _unit(id, d) { const s = this._st(id); return (s && s.attributes && s.attributes.unit_of_measurement) || d; }
     _fmt(v, d = 0) { return isNaN(v) ? '--' : v.toLocaleString(this._lang() === 'en' ? 'en-US' : this._lang(), { maximumFractionDigits: d, minimumFractionDigits: 0 }); }
@@ -208,26 +256,43 @@ svg{display:block;width:100%;max-width:200px;height:var(--appliance-illustration
       else if (/cool|rafra|froid/.test(key) && key !== 'heat_cool') st = 'cooling';
       else if (/heat|chauff|compress|running|marche|^on/.test(key)) st = 'heating';
       else if (s) st = 'standby';
-      else if (!isNaN(pw)) st = pw > c.threshold ? 'heating' : pw > 0.5 ? 'standby' : 'off';
+      else if (!isNaN(pw)) st = this._sustained(pw > c.threshold) ? 'heating' : pw > c.off_threshold ? 'standby' : 'off';
       else if (!isNaN(heat)) st = heat > 0 ? 'heating' : 'standby';
       else st = 'standby';
       const active = st === 'heating' || st === 'dhw' || st === 'cooling';
-      const run = active && (isNaN(pw) || pw > c.threshold);
+      // Trois animations séparées, par paliers de puissance ou par entité (relais) :
+      // - circuit de chauffage au-dessus de threshold (une PAC tout-ou-rien chauffe souvent
+      //   avec le seul circulateur, ~40 W, compresseur à l'arrêt) ;
+      // - captage (pompes de puits / primaire) au-dessus de source_threshold : elles démarrent
+      //   avant le compresseur et s'arrêtent après ; sans réglage, captage = compresseur ;
+      // - compresseur et circuit frigorifique au-dessus de compressor_threshold (sinon threshold).
+      const pump = active && (isNaN(pw) || pw > c.threshold);
+      const run = c.entity_compressor ? this._on(c.entity_compressor) : active && (isNaN(pw) || pw > (c.compressor_threshold ?? c.threshold));
+      const src = c.entity_source_pump ? this._on(c.entity_source_pump)
+        : c.source_threshold != null && !isNaN(pw) ? pw > c.source_threshold || run : run;
       const rate = this._num(c.entity_flow_rate);
-      const circ = c.entity_flow_rate ? rate > 0 : run || heat > 0;
-      return { st, run, circ, pw, heat, rate };
+      // ballon tampon : la PAC charge le ballon (compresseur, ou débit côté PAC s'il est mesuré)
+      // et le circulateur distribue l'eau du ballon vers les émetteurs, compresseur arrêté ou non
+      if (c.buffer_tank) {
+        const chg = c.entity_flow_rate ? rate > 0 : run;
+        return { st, run, src, chg, circ: pump, pw, heat, rate };
+      }
+      const circ = c.entity_flow_rate ? rate > 0 : pump || heat > 0;
+      return { st, run, src, chg: false, circ, pw, heat, rate };
     }
 
     _render() {
       if (!this._built) this._build();
       const c = this._c, card = this._card, r = this._root;
-      const { st, run, circ, pw, heat, rate } = this._compute();
+      const { st, run, src, chg, circ, pw, heat, rate } = this._compute();
       const flow = this._num(c.entity_flow_temp), ret = this._num(c.entity_return_temp);
-      card.className = `${st} ${run ? 'run' : ''} ${circ ? 'circ' : ''} ${c.animations === false ? 'noanim' : ''}`;
+      card.className = `${st} ${run ? 'run' : ''} ${src ? 'src' : ''} ${chg ? 'chg' : ''} ${circ ? 'circ' : ''} ${c.buffer_tank ? 'buffer' : ''} ${c.animations === false ? 'noanim' : ''}`;
       // départ / retour : bleu à 20 °C, rouge à 55 °C (températures de PAC, plus basses qu'une chaudière)
       const tc = (t, d) => isNaN(t) ? d : `color-mix(in srgb, #e5392b ${Math.round(Math.max(0, Math.min(1, (t - 20) / 35)) * 100)}%, #3b8fe8)`;
       card.style.setProperty('--wp-flowc', tc(flow, '#e5533d'));
       card.style.setProperty('--wp-retc', tc(ret, '#3b8fe8'));
+      const buf = this._num(c.entity_buffer_temp);
+      card.style.setProperty('--wp-tankc', tc(isNaN(buf) ? flow : buf, '#e5533d'));
 
       r.getElementById('title').textContent = c.name || this._t('name');
       const badge = r.getElementById('badge'); badge.textContent = this._t(st); badge.style.display = c.show_status === false ? 'none' : '';
@@ -244,6 +309,7 @@ svg{display:block;width:100%;max-width:200px;height:var(--appliance-illustration
         flow: [c.entity_flow_temp, this._fmt(flow, 1), '°C'],
         ret: [c.entity_return_temp, this._fmt(ret, 1), '°C'],
         delta: [c.entity_flow_temp && c.entity_return_temp, this._fmt(flow - ret, 1), 'K'],
+        buffer: [c.entity_buffer_temp, this._fmt(buf, 1), '°C'],
         src_in: [c.entity_source_in_temp, this._fmt(this._num(c.entity_source_in_temp), 1), '°C'],
         src_out: [c.entity_source_out_temp, this._fmt(this._num(c.entity_source_out_temp), 1), '°C'],
         rate: [c.entity_flow_rate, this._fmt(rate, 2), this._unit(c.entity_flow_rate, 'l/h')],

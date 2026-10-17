@@ -389,6 +389,31 @@ const KW={unit_of_measurement:'kW',device_class:'power'}, P={entity_power:'senso
 ok('registered water-heat-pump',customElements.get('appliance-water-heat-pump-card'));
 c=wp([mk('sensor.p',1200,W)],{entity_power:'sensor.p'}); ok('water heat pump running from power',/\bheating\b/.test(hc(c))&&/\brun\b/.test(hc(c))&&badge(c)==='Chauffage',hc(c)+' '+badge(c));
 c=wp([mk('sensor.p',3,W)],{entity_power:'sensor.p'}); ok('water heat pump standby under threshold',/\bstandby\b/.test(hc(c))&&!/\brun\b/.test(hc(c)),hc(c));
+c=wp([mk('sensor.p',0.3,W)],{entity_power:'sensor.p'}); ok('water heat pump off under off_threshold (default 0.5 W)',/\boff\b/.test(hc(c)),hc(c));
+c=wp([mk('sensor.p',3,W)],{entity_power:'sensor.p',off_threshold:4.5}); ok('water heat pump off_threshold (float) sets off vs standby',/\boff\b/.test(hc(c)),hc(c));
+c=wp([mk('sensor.p',5,W)],{entity_power:'sensor.p',off_threshold:4.5}); ok('water heat pump standby above off_threshold',/\bstandby\b/.test(hc(c)),hc(c));
+c=wp([mk('sensor.p',36,W)],{entity_power:'sensor.p',threshold:25,compressor_threshold:300}); ok('water heat pump circulation pump only: heating, water flows, compressor still',/\bheating\b/.test(hc(c))&&/\bcirc\b/.test(hc(c))&&!/\brun\b/.test(hc(c)),hc(c));
+c=wp([mk('sensor.p',1800,W)],{entity_power:'sensor.p',threshold:25,compressor_threshold:300}); ok('water heat pump compressor above compressor_threshold',/\bheating\b/.test(hc(c))&&/\brun\b/.test(hc(c)),hc(c));
+{ // cycle of an on/off heat pump: circulation pump, then source pumps, then compressor, then source pumps again
+const CY={entity_power:'sensor.p',threshold:25,source_threshold:150,compressor_threshold:800}, on=(c,k)=>new RegExp(`\\b${k}\\b`).test(hc(c));
+const steps=[[36,'circulation only',[1,0,0]],[300,'source pumps first',[1,1,0]],[2600,'compressor',[1,1,1]],[300,'source pumps last',[1,1,0]]];
+steps.forEach(([w,name,[ci,sr,ru]])=>{c=wp([mk('sensor.p',w,W)],CY); ok(`water heat pump cycle: ${name} (${w} W)`,on(c,'circ')===!!ci&&on(c,'src')===!!sr&&on(c,'run')===!!ru,hc(c));});
+c=wp([mk('sensor.p',2600,W)],{entity_power:'sensor.p',threshold:25,compressor_threshold:800}); ok('water heat pump without source_threshold: source loop follows the compressor',on(c,'src')&&on(c,'run'),hc(c));
+c=wp([mk('sensor.p',36,W),mk('binary_sensor.comp','off'),mk('binary_sensor.well','on')],{entity_power:'sensor.p',threshold:25,entity_compressor:'binary_sensor.comp',entity_source_pump:'binary_sensor.well'}); ok('water heat pump relay entities: source pump on, compressor off',on(c,'src')&&!on(c,'run'),hc(c));
+c=wp([mk('sensor.p',2600,W),mk('sensor.comp_hz',58),mk('switch.well','on')],{entity_power:'sensor.p',threshold:25,entity_compressor:'sensor.comp_hz',entity_source_pump:'switch.well'}); ok('water heat pump relay entities: numeric compressor sensor > 0 -> running',on(c,'src')&&on(c,'run'),hc(c));
+}
+{ // buffer tank: the heat pump charges the tank, the circulation pump feeds the emitters from the tank
+const BT={entity_power:'sensor.p',threshold:25,compressor_threshold:800,buffer_tank:true}, on=(c,k)=>new RegExp(`\\b${k}\\b`).test(hc(c));
+c=wp([mk('sensor.p',36,W)],BT); ok('water heat pump buffer: compressor off, emitters fed from the tank',on(c,'buffer')&&on(c,'circ')&&!on(c,'chg')&&!on(c,'run'),hc(c));
+c=wp([mk('sensor.p',2600,W)],BT); ok('water heat pump buffer: compressor on, tank charging',on(c,'chg')&&on(c,'run')&&on(c,'circ'),hc(c));
+c=wp([mk('sensor.p',2600,W),mk('sensor.rate',0,{unit_of_measurement:'m³/h'})],{...BT,entity_flow_rate:'sensor.rate'}); ok('water heat pump buffer: charging follows the heat pump flow rate',!on(c,'chg')&&on(c,'circ'),hc(c));
+c=wp([mk('sensor.p',36,W),mk('sensor.buf',42.5,T)],{...BT,entity_buffer_temp:'sensor.buf'}); ok('water heat pump buffer temperature tile',shown(c,'buffer')&&tv(c,'buffer')==='42,5°C'&&c.el.shadowRoot.querySelector('ha-card').style.getPropertyValue('--wp-tankc').includes('color-mix'),tv(c,'buffer'));
+c=wp([mk('sensor.p',36,W)],{entity_power:'sensor.p',threshold:25}); ok('water heat pump without buffer_tank: direct circuit, no buffer tile',!on(c,'buffer')&&!shown(c,'buffer'),hc(c));
+}
+c=wp([mk('sensor.p',900,W)],{entity_power:'sensor.p',heating_delay:60}); ok('water heat pump heating_delay: short spike stays standby',/\bstandby\b/.test(hc(c))&&!/\brun\b/.test(hc(c)),hc(c));
+c.el._since-=61000; c.el.hass=c.h; ok('water heat pump heating_delay: sustained power -> heating',/\bheating\b/.test(hc(c))&&/\brun\b/.test(hc(c)),hc(c));
+c.el.hass=hassOf([mk('sensor.p',0.4,W)]); c.el.hass=hassOf([mk('sensor.p',900,W)]); ok('water heat pump heating_delay: restarts after dropping below',/\bstandby\b/.test(hc(c)),hc(c));
+c=wp([{...mk('sensor.p',900,W),last_changed:new Date(Date.now()-120000).toISOString()}],{entity_power:'sensor.p',heating_delay:60}); ok('water heat pump heating_delay: power steady for 2 min at load -> heating',/\bheating\b/.test(hc(c)),hc(c));
 c=wp([mk('sensor.p',1500,W),mk('sensor.h',5.25,KW)],P); ok('water heat pump COP computed (heat / electric)',tv(c,'cop')==='3,5'&&tv(c,'heat')==='5,25kW',tv(c,'cop')+' '+tv(c,'heat'));
 c=wp([mk('sensor.p',1500,W),mk('sensor.h',5.25,KW),mk('sensor.cop',4.2)],{...P,entity_cop:'sensor.cop'}); ok('water heat pump COP sensor wins',tv(c,'cop')==='4,2',tv(c,'cop'));
 c=wp([mk('sensor.p',1500,W)],{entity_power:'sensor.p'}); ok('water heat pump: no COP tile without heat power',!shown(c,'cop')&&!shown(c,'src_in')&&shown(c,'power'));
@@ -398,7 +423,7 @@ c=wp([mk('water_heater.pac','heat_pump'),mk('sensor.p',900,W)],{entity_status:'w
 c=wp([mk('sensor.p',900,W),mk('sensor.f',35,T),mk('sensor.r',30,T),mk('sensor.q',0,{unit_of_measurement:'m³/h'})],{entity_power:'sensor.p',entity_flow_temp:'sensor.f',entity_return_temp:'sensor.r',entity_flow_rate:'sensor.q'});
 ok('water heat pump ΔT and no circulation at zero flow',tv(c,'delta')==='5K'&&!/\bcirc\b/.test(hc(c))&&c.sr.getElementById('dsp').textContent==='35°',tv(c,'delta')+' '+hc(c));
 c.el.hass=hassOf([mk('sensor.p',900,W),mk('sensor.f',35,T),mk('sensor.r',30,T),mk('sensor.q',1.2,{unit_of_measurement:'m³/h'})]); ok('water heat pump circulation when flow > 0',/\bcirc\b/.test(hc(c))&&tv(c,'rate')==='1,2m³/h',hc(c)+' '+tv(c,'rate'));
-const wf=[], walk=(s)=>s.forEach((i)=>i.schema?walk(i.schema):(i.selector?.boolean&&i.default!==true&&wf.push(i.name)));
+const we=document.createElement('appliance-water-heat-pump-card'); we.setConfig({}); const wf=[], walk=(s)=>s.forEach((i)=>i.schema?walk(i.schema):(i.selector?.boolean&&we._c[i.name]===true&&i.default!==true&&wf.push(i.name)));
 walk(customElements.get('appliance-water-heat-pump-card').getConfigForm().schema); ok('water heat pump editor switches shown on by default',wf.length===0,wf.join(', '));
 document.querySelectorAll('appliance-water-heat-pump-card').forEach((e)=>e.remove()); // keep the SVG id check about the core cards
 }

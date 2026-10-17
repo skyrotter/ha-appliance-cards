@@ -307,6 +307,7 @@
     "rate": "Durchfluss",
     "energy": "Elektr. Energie",
     "heat_energy": "Wärmeenergie",
-    "scop": "SCOP"
+    "scop": "SCOP",
+    "buffer": "Pufferspeicher"
   }
 }

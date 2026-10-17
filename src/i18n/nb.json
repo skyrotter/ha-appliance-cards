@@ -307,6 +307,7 @@
 "rate": "Gjennomstrømning",
 "energy": "Elektr. energi",
 "heat_energy": "Varmeenergi",
-"scop": "SCOP"
+"scop": "SCOP",
+"buffer": "Buffertank"
 }
 }

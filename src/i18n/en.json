@@ -307,6 +307,7 @@
     "rate": "Flow rate",
     "energy": "Elec. energy",
     "heat_energy": "Heat energy",
-    "scop": "SCOP"
+    "scop": "SCOP",
+    "buffer": "Buffer tank"
   }
 }
